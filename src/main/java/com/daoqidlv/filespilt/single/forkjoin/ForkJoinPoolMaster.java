@@ -57,6 +57,12 @@ public class ForkJoinPoolMaster extends Master{
 		long endTime = System.currentTimeMillis();
 		System.out.println("总耗时（ms）："+(endTime-startTime));	
 		
-	}	
+	}
+
+	@Override
+	public void excuteByKeyword() {
+
+	}
+
 
 }

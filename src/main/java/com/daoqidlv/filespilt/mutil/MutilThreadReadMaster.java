@@ -110,7 +110,13 @@ public class MutilThreadReadMaster extends Master {
 		System.out.println("writeTaskNum="+this.writeTaskNum);
 		System.out.println("queueSize="+this.queueSize);
 	}
-	
+
+	@Override
+	public void excuteByKeyword() {
+
+	}
+
+
 	private int getTotalReadedSize(List<Future> fileReadFutureList) {
 		Future futureTemp = null; 
 		int totalReadedSize = 0;

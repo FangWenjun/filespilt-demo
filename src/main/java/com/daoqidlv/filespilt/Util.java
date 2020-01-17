@@ -49,4 +49,13 @@ public class Util {
 		}
 	}
 
+	public static String[] removeStrs(String[] strs, int num) {
+		int size = strs.length - num;
+		String[] tmp = new String[size];
+		for (int i = 0; i < size; i++) {
+			tmp[i] = strs[num + i];
+		}
+		return tmp;
+	}
+
 }

@@ -80,6 +80,8 @@ public class Test {
 		master.init();
 		//启动master
 		master.excute();
+
 		
 	}
+
 }

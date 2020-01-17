@@ -48,6 +48,11 @@ public class FileWriteTask extends Thread{
 		this.fileSize = fileSize;
 		this.fileWritenSize = 0;
 	}
+
+	public void addFileContent(String lineContent) {
+		fileContent.add(lineContent);
+		fileSize += lineContent.length();
+	}
 	
 	
 	@Override
@@ -63,7 +68,7 @@ public class FileWriteTask extends Thread{
 				bw.flush();
 				fileWritenSize += lineContent.length();
 			}
-			System.out.println("写入一个子文件，文件名为："+this.fileName+", 文件大小为："+this.fileSize);
+			System.out.println("写入一个子文件，文件名为："+this.fileName+", 文件大小为："+this.fileWritenSize);
 		} catch (FileNotFoundException e) {
 			//TODO 日志记录
 			System.err.println("写文件错误！");

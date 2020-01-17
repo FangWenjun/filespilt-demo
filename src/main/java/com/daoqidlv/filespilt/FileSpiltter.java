@@ -1,6 +1,7 @@
 package com.daoqidlv.filespilt;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import com.daoqidlv.filespilt.single.forkjoin.ForkFileWriteTask;
@@ -43,8 +44,27 @@ public class FileSpiltter {
 	 * 待生成的子文件全名称模板
 	 */
 	private String fileNameTemplate;
-	
-	
+
+	/**
+	 * 间隔符
+	 */
+	private String splitSymbol;
+
+	/**
+	 * 拆分关键字位置
+	 */
+	private int splitKeywordLocation;
+
+	/**
+	 * 拆分关键字值
+	 */
+	private String[] splitValues;
+
+
+	public HashMap<String, FileWriteTask> fileWriteTaskHashMap = new HashMap<>();
+
+
+
 	public FileSpiltter(int subFileSizeLimit, String fileDir, String fileNameTemplate) {
 		this.fileDir = fileDir;
 		this.fileNameTemplate = fileNameTemplate;
@@ -52,6 +72,20 @@ public class FileSpiltter {
 		this.fileCacheSize = 0;
 		this.fileCache = new ArrayList<String>();
 	}
+
+
+	public FileSpiltter(String fileDir,
+						String fileNameTemplate,
+						String splitSymbol,
+						int splitKeywordLocation,
+						String[] splitValues) {
+		this.fileDir = fileDir;
+		this.fileNameTemplate = fileNameTemplate;
+		this.splitSymbol = splitSymbol;
+		this.splitKeywordLocation = splitKeywordLocation;
+		this.splitValues = splitValues;
+	}
+
 	
 	public FileWriteTask spilt(String lineContent) {
 		int totalSize = this.fileCacheSize + lineContent.length();
@@ -70,6 +104,28 @@ public class FileSpiltter {
 			this.fileCache.add(lineContent);
 			this.fileCacheSize += lineContent.length();
 			return null;
+		}
+	}
+
+
+	public void splitByKeyWord(String lineContent) {
+
+		String[] contentStrs = lineContent.split(splitSymbol);
+		int mapSize = fileWriteTaskHashMap.size();
+		for (String value : splitValues) {
+			if (value.equals(contentStrs[splitKeywordLocation])) {
+				FileWriteTask task = fileWriteTaskHashMap.get(value);
+				if (task == null) {
+					String subFileName = genSubFileName();
+					task = new FileWriteTask(this.fileDir, subFileName, new ArrayList<>(), 0);
+					task.addFileContent(lineContent);
+					fileWriteTaskHashMap.put(value, task);
+					this.subFileCounter++;
+				} else {
+					task.addFileContent(lineContent);
+				}
+
+			}
 		}
 	}
 	
