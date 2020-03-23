@@ -1,5 +1,6 @@
 package com.daoqidlv.filespilt.mutil;
 
+import java.nio.channels.MulticastChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.daoqidlv.filespilt.FileSpiltter;
 import com.daoqidlv.filespilt.Master;
 import com.daoqidlv.filespilt.Util;
 
@@ -25,6 +27,8 @@ public class MutilThreadReadMaster extends Master {
 	private ExecutorService fileReadPool;
 	
 	private ExecutorService fileWritePool;
+
+	private FileSpiltter fileSpiltter;
 	
 	/**
 	 * 用于交换子文件内容的阻塞队列
@@ -39,41 +43,72 @@ public class MutilThreadReadMaster extends Master {
 	
 	private TaskAllocater taskAllocater;
 
-	public MutilThreadReadMaster(String fileDir, String fileName, int subFileSizeLimit, int readTaskNum, int writeTaskNum, int queueSize) {
-		super(fileDir, fileName, subFileSizeLimit);
-		this.readTaskNum = readTaskNum;
-		this.writeTaskNum = writeTaskNum;
-		this.queueSize = queueSize;
+	private String splitSymbol;
+
+	private int splitKeywordLocation;
+
+	private String[] splitValues;
+
+	public static class Builder {
+
+		private String fileDir;
+		private String fileName;
+		private int subFileSizeLimit;
+		private int readTaskNum;
+		private int writeTaskNum;
+		private int queueSize;
+		private String splitSymbol;
+		private int splitKeywordLocation;
+		private String[] splitValues;
+		private FileSpiltter fileSpiltter;
+
+		public Builder(String fileDir, String fileName) {
+			this.fileDir = fileDir;
+			this.fileName = fileName;
+		}
+
+		public Builder bySize(int subFileSizeLimit, int readTaskNum, int writeTaskNum, int queueSize) {
+			this.subFileSizeLimit = subFileSizeLimit;
+			this.readTaskNum = readTaskNum;
+			this.writeTaskNum = writeTaskNum;
+			this.queueSize = queueSize;
+			this.fileSpiltter = new FileSpiltter.Builder(fileDir, fileName).bySize(subFileSizeLimit).build();
+			return this;
+		}
+
+		public Builder byKeyword(String splitSymbol, int splitKeywordLocation, String[] splitValues) {
+			this.splitSymbol = splitSymbol;
+			this.splitKeywordLocation = splitKeywordLocation;
+			this.splitValues = splitValues;
+			this.fileSpiltter = new FileSpiltter.Builder(fileDir, fileName).byKeyword(splitSymbol, splitKeywordLocation, splitValues).build();
+			return this;
+		}
+
+		public MutilThreadReadMaster build() {
+			return new MutilThreadReadMaster(this);
+		}
+
+	}
+
+	private MutilThreadReadMaster(Builder builder) {
+		super(builder.fileDir, builder.fileName);
+		this.splitSymbol = builder.splitSymbol;
+		this.splitKeywordLocation = builder.splitKeywordLocation;
+		this.splitValues = builder.splitValues;
+		this.readTaskNum = builder.readTaskNum;
+		this.writeTaskNum = builder.writeTaskNum;
+		this.queueSize = builder.queueSize;
 		this.fileReadPool = new ThreadPoolExecutor(this.readTaskNum, this.readTaskNum, 0l, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>(200), new FileReadThreadFactory());
 		this.fileWritePool = new ThreadPoolExecutor(this.writeTaskNum, this.writeTaskNum, 0l, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>(200), new FileWriteThreadFactory());
-
-		queue = new LinkedBlockingQueue<FileLine>(this.queueSize);
+		this.queue = new LinkedBlockingQueue<FileLine>(this.queueSize);
+		this.fileSpiltter = builder.fileSpiltter;
 	}
 
-	private MutilThreadReadMaster(String fileDir,
-								 String fileName,
-								 String splitSymbol,
-								 int splitKeywordLocation,
-								 String[] splitValues) {
-		super(fileDir, fileName, splitSymbol, splitKeywordLocation, splitValues);
-		this.fileReadPool = new ThreadPoolExecutor(this.readTaskNum, this.readTaskNum, 0l, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>(200), new FileReadThreadFactory());
-		this.fileWritePool = new ThreadPoolExecutor(this.writeTaskNum, this.writeTaskNum, 0l, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>(200), new FileWriteThreadFactory());
-		queue = new LinkedBlockingQueue<FileLine>(this.queueSize);
-	}
-
-	public static MutilThreadReadMaster getMutilThreadReadMasterByKeyword(String fileDir,
-																   String fileName,
-																   String splitSymbol,
-																   int splitKeywordLocation,
-																   String[] splitValues) {
-		return new MutilThreadReadMaster(fileDir, fileName, splitSymbol, splitKeywordLocation, splitValues);
-
-	}
 	
 	@Override
 	public void init() {
 		//String orignFileFullName, int readTaskNum, int writeTaskNum, int maxLineSize, FileSpiltter fileSpiltter
-		taskAllocater = new TaskAllocater(Util.genFullFileName(this.getFileDir(), this.getFileName()), this.readTaskNum, this.writeTaskNum, 1024, this.getFileSpiltter(), this.queue);
+		taskAllocater = new TaskAllocater(Util.genFullFileName(this.getFileDir(), this.getFileName()), this.readTaskNum, this.writeTaskNum, 1024, this.fileSpiltter, this.queue);
 	}
 
 	

@@ -91,11 +91,7 @@ public class ForkFileReadTask extends RecursiveTask<Boolean>{
 		}
 
 		System.out.println("源文件大小为："+sumReadedSize+",实际写入文件大小为："+totalWrittenSize);
-		if(sumReadedSize == totalWrittenSize) {
-			return true;
-		} else {
-			return false;
-		}
+		return sumReadedSize == totalWrittenSize;
 	}
 	
 

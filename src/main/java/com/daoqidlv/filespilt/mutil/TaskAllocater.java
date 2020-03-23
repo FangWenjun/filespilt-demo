@@ -40,7 +40,8 @@ public class TaskAllocater {
 	 * 用于交换子文件内容的阻塞队列
 	 */
 	private BlockingQueue<FileLine> queue;
-	
+
+
 	public TaskAllocater(String orignFileFullName, int readTaskNum, int writeTaskNum, int maxLineSize, FileSpiltter fileSpiltter, BlockingQueue<FileLine> queue) {
 		this.orignFileFullName = orignFileFullName;
 		this.readTaskNum = readTaskNum;
@@ -49,6 +50,8 @@ public class TaskAllocater {
 		this.fileSpiltter = fileSpiltter;
 		this.queue = queue;
 	}
+
+
 	
 	/**
 	 * 依据原始文件大小及读文件任务数，完成FileReadTask的初始化
@@ -68,7 +71,6 @@ public class TaskAllocater {
 		} catch (FileNotFoundException e) {			
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}  
 		int avgToReadSize = orignFileSize/this.readTaskNum;
@@ -91,6 +93,48 @@ public class TaskAllocater {
 			System.out.println("创建一个FileReadTask："+task);
 		}
 		return taskList;
+	}
+
+
+	public List<FileReadTask> initFileReadTaskByLine() {
+
+		if(this.readTaskNum <= 0) {
+			throw new IllegalArgumentException("文件读取任务数量必须大于0！");
+		}
+		RandomAccessFile orginFile = null;
+		int orignFileSize = 0;
+		try {
+			orginFile = new RandomAccessFile(this.orignFileFullName, "r");
+			//取得文件长度（字节数）
+			orignFileSize = (int)orginFile.length();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		int avgToReadSize = orignFileSize/this.readTaskNum;
+		List<FileReadTask> taskList = new ArrayList<FileReadTask>();
+
+		int lastEndFilePointer = -1;
+		int revisedEndFilePointer = 0;
+		for(int i=0; i<this.readTaskNum; i++) {
+			FileReadTask task = null;
+			//最后一个任务将剩余未分配的数据也读取完成
+			if(i == this.readTaskNum-1) {
+				task = new FileReadTask(i, lastEndFilePointer+1, orignFileSize-1, this.orignFileFullName, this.queue);
+			} else {
+				revisedEndFilePointer = reviseEndFilePointer(lastEndFilePointer+avgToReadSize, orginFile);
+				task = new FileReadTask(i, lastEndFilePointer+1, revisedEndFilePointer, this.orignFileFullName, this.queue);
+				lastEndFilePointer = revisedEndFilePointer;
+			}
+			taskList.add(task);
+			System.out.println("创建一个FileReadTask："+task);
+		}
+		return taskList;
+
+		return null;
+
 	}
 	
 	/**
@@ -120,6 +164,23 @@ public class TaskAllocater {
 			}
 		}
 		return revisedEndFilePointer - revisedNum;
+	}
+
+
+	private int reviseEndPointer(int endFilePointer, RandomAccessFile orginFile) {
+		int reviseEndFilePointer = endFilePointer;
+		int byteValue = -1;
+		do {
+			try {
+				orginFile.seek(reviseEndFilePointer);
+				byteValue = orginFile.read();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} while(Constants.ENTER_CHAR_ASCII != byteValue && Constants.NEW_LINE_CHAR_ASCII != byteValue);
+
+
+		return 0;
 	}
 
 	/**

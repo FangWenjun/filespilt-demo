@@ -31,34 +31,64 @@ import com.daoqidlv.filespilt.Util;
  */
 public class NormalPoolMaster extends Master{
 
-	
+	private String splitSymbol;
+
+	private int splitKeywordLocation;
+
+	private String[] splitValues;
+
+	private int subFileSizeLimit;
+
+	private FileSpiltter fileSpiltter;
+
 	private ExecutorService fileWritePool;
-	
-	public NormalPoolMaster(String fileDir, String fileName, int subFileSizeLimit) {
-		super(fileDir, fileName, subFileSizeLimit);
-		this.fileWritePool = new ThreadPoolExecutor(4, 4, 0l, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>(200));
+
+	public static class Builder {
+
+		private String splitSymbol;
+		private int splitKeywordLocation;
+		private String[] splitValues;
+		private int subFileSizeLimit;
+		private FileSpiltter fileSpiltter;
+		private ExecutorService fileWritePool;
+		private String fileDir;
+		private String fileName;
+
+		public Builder(String fileDir, String fileName) {
+			this.fileDir = fileDir;
+			this.fileName = fileName;
+		}
+
+		public Builder bySize(int subFileSizeLimit) {
+			this.subFileSizeLimit = subFileSizeLimit;
+			return this;
+		}
+
+		public Builder byKeyword(String splitSymbol,
+								 int splitKeywordLocation,
+								 String[] splitValues) {
+			this.splitSymbol = splitSymbol;
+			this.splitKeywordLocation = splitKeywordLocation;
+			this.splitValues = splitValues;
+			this.fileSpiltter = new FileSpiltter.Builder(fileDir, fileName).byKeyword(splitSymbol,splitKeywordLocation,splitValues).build();
+			return this;
+		}
+
+		public NormalPoolMaster build() {
+			return new NormalPoolMaster(this);
+		}
+
 	}
 
-
-	private NormalPoolMaster(String fileDir,
-							String fileName,
-							String splitSymbol,
-							int splitKeywordLocation,
-							String[] splitValues) {
-		super(fileDir, fileName, splitSymbol, splitKeywordLocation, splitValues);
-		this.fileWritePool = new ThreadPoolExecutor(4, 4, 0l, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>(200));
+	private NormalPoolMaster(Builder builder) {
+		super(builder.fileDir, builder.fileName);
+		this.splitSymbol = builder.splitSymbol;
+		this.splitValues = builder.splitValues;
+		this.splitKeywordLocation = builder.splitKeywordLocation;
+		this.fileSpiltter = builder.fileSpiltter;
+		this.fileWritePool = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>(200));
 	}
 
-	public static NormalPoolMaster getNormalPoolMasterByKeyword(String fileDir,
-														 String fileName,
-														 String splitSymbol,
-														 int splitKeywordLocation,
-														 String[] splitValues) {
-		return new NormalPoolMaster(fileDir, fileName, splitSymbol, splitKeywordLocation, splitValues);
-	}
-
-
-	
 
 	@Override
 	public void excute() {
@@ -72,7 +102,7 @@ public class NormalPoolMaster extends Master{
 			reader = new BufferedReader(new FileReader(file));
 			String lineContent = "";
 			while (reader.ready() && (lineContent = reader.readLine()) != null) {
-				FileWriteTask fileWriteTask = this.getFileSpiltter().spilt(lineContent);
+				FileWriteTask fileWriteTask = this.fileSpiltter.spilt(lineContent);
 				if(fileWriteTask != null) {
 					//将任务提交pool处理
 					Future future = this.fileWritePool.submit(fileWriteTask, fileWriteTask);
@@ -144,7 +174,7 @@ public class NormalPoolMaster extends Master{
 		try {
 			reader = new BufferedReader(new FileReader(file));
 			String lineContent = "";
-			FileSpiltter fileSpiltter = this.getFileSpiltter();
+			FileSpiltter fileSpiltter = this.fileSpiltter;
 			while (reader.ready() && (lineContent = reader.readLine()) != null) {
 				sumSize += lineContent.length();
 				fileSpiltter.splitByKeyWord(lineContent);

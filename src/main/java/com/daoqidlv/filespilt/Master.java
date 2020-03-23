@@ -14,41 +14,14 @@ public abstract class Master {
 
 	private String fileName;
 
-	private int subFileSizeLimit;
-
-	private FileSpiltter fileSpiltter;
-
-	private String splitSymbol;
-
-	private int splitKeywordLocation;
-
-	private String[] splitValues;
-
 	private HashMap<String, FileWriteTask> subFileMap;
 
 
-
-	public Master(String fileDir, String fileName, int subFileSizeLimit) {
+	public Master(String fileDir, String fileName) {
 		this.fileDir = fileDir;
 		this.fileName = fileName;
-		//TODO 更好的做法：根据上送的单位值进行换算
-		this.subFileSizeLimit = subFileSizeLimit * 1024 * 1024;
-		this.fileSpiltter = new FileSpiltter(this.subFileSizeLimit, this.fileDir, this.fileName);
 	}
 
-
-	public Master(String fileDir,
-				  String fileName,
-				  String splitSymbol,
-				  int splitKeywordLocation,
-				  String[] splitValues) {
-		this.fileDir = fileDir;
-		this.fileName = fileName;
-		this.splitSymbol = splitSymbol;
-		this.splitKeywordLocation = splitKeywordLocation;
-		this.splitValues = splitValues;
-		this.fileSpiltter = new FileSpiltter(this.fileDir, this.fileName, this.splitSymbol, this.splitKeywordLocation, this.splitValues);
-	}
 
 	/**
 	 * 工厂方法，根据masterType产生master示例
@@ -69,10 +42,11 @@ public abstract class Master {
 			int queueSize,
 			int bufferSize) {
 		if (masterType.equals(Constants.MASTER_TYPE_NORMAL_POOL)) {
-			return new NormalPoolMaster(fileDir, fileName, subFileSizeLimit);
+			return new NormalPoolMaster.Builder(fileDir, fileName).bySize(subFileSizeLimit).build();
 			//默认使用NormalPoolMaster
 		} else if (masterType.equals(Constants.MASTER_TYPE_PRODUCER_CONSUMER)) {
-			return new MutilThreadReadMaster(fileDir, fileName, subFileSizeLimit, readTaskNum, writeTaskNum, queueSize);
+			return null;
+	//		return new MutilThreadReadMaster(fileDir, fileName, subFileSizeLimit, readTaskNum, writeTaskNum, queueSize);
 		} else if (masterType.equals(Constants.MASTER_TYPE_DISRUPTOR)) {
 			return new DisruptorMaster(fileDir, fileName, subFileSizeLimit, readTaskNum, writeTaskNum, queueSize, bufferSize);
 		} else {
@@ -81,7 +55,7 @@ public abstract class Master {
 	}
 
 
-	public static Master getMasterInstance(
+	public static Master getMasterInstanceByKeyword(
 			String masterType,
 			String fileDir,
 			String fileName,
@@ -90,10 +64,11 @@ public abstract class Master {
 			String[] splitValues
 			) {
 		if (masterType.equals(Constants.MASTER_TYPE_NORMAL_POOL)) {
-			return NormalPoolMaster.getNormalPoolMasterByKeyword(fileDir, fileName, splitSymbol, splitKeywordLocation, splitValues);
+			return new NormalPoolMaster.Builder(fileDir, fileName).byKeyword(splitSymbol, splitKeywordLocation, splitValues).build();
 			//默认使用NormalPoolMaster
 		} else if (masterType.equals(Constants.MASTER_TYPE_PRODUCER_CONSUMER)) {
-			return MutilThreadReadMaster.getMutilThreadReadMasterByKeyword(fileDir, fileName, splitSymbol, splitKeywordLocation, splitValues);
+			return null;
+		//	return MutilThreadReadMaster.getMutilThreadReadMasterByKeyword(fileDir, fileName, splitSymbol, splitKeywordLocation, splitValues);
 		}  else {
 			return null;
 		}
@@ -127,46 +102,6 @@ public abstract class Master {
 
 	public void setFileName(String fileName) {
 		this.fileName = fileName;
-	}
-
-	public int getSubFileSizeLimit() {
-		return subFileSizeLimit;
-	}
-
-	public void setSubFileSizeLimit(int subFileSizeLimit) {
-		this.subFileSizeLimit = subFileSizeLimit;
-	}
-
-	public FileSpiltter getFileSpiltter() {
-		return fileSpiltter;
-	}
-
-	public void setFileSpiltter(FileSpiltter fileSpiltter) {
-		this.fileSpiltter = fileSpiltter;
-	}
-
-	public String getSplitSymbol() {
-		return splitSymbol;
-	}
-
-	public void setSplitSymbol(String splitSymbol) {
-		this.splitSymbol = splitSymbol;
-	}
-
-	public int getSplitKeywordLocation() {
-		return splitKeywordLocation;
-	}
-
-	public void setSplitKeywordLocation(int splitKeywordLocation) {
-		this.splitKeywordLocation = splitKeywordLocation;
-	}
-
-	public String[] getSplitValues() {
-		return splitValues;
-	}
-
-	public void setSplitValues(String[] splitValues) {
-		this.splitValues = splitValues;
 	}
 
 

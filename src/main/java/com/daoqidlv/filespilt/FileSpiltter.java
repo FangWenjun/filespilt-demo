@@ -14,11 +14,22 @@ import com.daoqidlv.filespilt.single.normal.FileWriteTask;
  *
  */
 public class FileSpiltter {
+
+	/**********必填************/
+
 	/**
 	 * 拆分出来的子文件所在路径
 	 */
 	private String fileDir;
-	
+
+	/**
+	 * 待生成的子文件全名称模板
+	 */
+	private String fileNameTemplate;
+
+
+	/**********选填************/
+
 	/**
 	 * 拆分出来的子文件的大小上限值
 	 */
@@ -39,11 +50,6 @@ public class FileSpiltter {
 	 * 鉴于是单线程操作，故这里未使用原子计数器
 	 */
 	private int subFileCounter;
-	
-	/**
-	 * 待生成的子文件全名称模板
-	 */
-	private String fileNameTemplate;
 
 	/**
 	 * 间隔符
@@ -61,11 +67,62 @@ public class FileSpiltter {
 	private String[] splitValues;
 
 
+
+	public static class Builder {
+
+		private String fileDir;
+		private String fileNameTemplate;
+		private int subFileSizeLimit;
+		private List<String> fileCache;
+		private int fileCacheSize;
+		private int subFileCounter;
+		private String splitSymbol;
+		private int splitKeywordLocation;
+		private String[] splitValues;
+
+		public  Builder(String fileDir, String fileNameTemplate) {
+			this.fileDir = fileDir;
+			this.fileNameTemplate = fileNameTemplate;
+		}
+
+		public Builder bySize(int subFileSizeLimit) {
+			this.subFileSizeLimit = subFileSizeLimit;
+			this.fileCacheSize = 0;
+			this.fileCache = new ArrayList<String>();
+			return this;
+		}
+
+		public Builder byKeyword(String splitSymbol,
+							   int splitKeywordLocation,
+							   String[] splitValues) {
+			this.splitSymbol = splitSymbol;
+			this.splitKeywordLocation = splitKeywordLocation;
+			this.splitValues = splitValues;
+			return this;
+		}
+
+		public FileSpiltter build() {
+			return new FileSpiltter(this);
+		}
+
+	}
+
+	private FileSpiltter(Builder builder) {
+		this.fileDir = builder.fileDir;
+		this.fileNameTemplate = builder.fileNameTemplate;
+		this.fileCache = builder.fileCache;
+		this.splitSymbol = builder.splitSymbol;
+		this.splitKeywordLocation = builder.splitKeywordLocation;
+		this.splitValues = builder.splitValues;
+	}
+
+
+
 	public HashMap<String, FileWriteTask> fileWriteTaskHashMap = new HashMap<>();
 
 
 
-	public FileSpiltter(int subFileSizeLimit, String fileDir, String fileNameTemplate) {
+	private FileSpiltter(int subFileSizeLimit, String fileDir, String fileNameTemplate) {
 		this.fileDir = fileDir;
 		this.fileNameTemplate = fileNameTemplate;
 		this.subFileSizeLimit = subFileSizeLimit;
@@ -85,6 +142,14 @@ public class FileSpiltter {
 		this.splitKeywordLocation = splitKeywordLocation;
 		this.splitValues = splitValues;
 	}
+
+/*	public FileSpiltter getFileSplitterByKeyword(String fileDir,
+												 String fileNameTemplate,
+												 String splitSymbol,
+												 int splitKeywordLocation,
+												 String[] splitValues) {
+
+	}*/
 
 	
 	public FileWriteTask spilt(String lineContent) {

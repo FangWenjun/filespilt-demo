@@ -70,7 +70,7 @@ public class FileSplit {
         }
 
         //通过工厂方法获取master实例
-        Master master = Master.getMasterInstance(mode, fileDir, fileName, splitSymbol, splitKeywordLocation, splitValues);
+        Master master = Master.getMasterInstanceByKeyword(mode, fileDir, fileName, splitSymbol, splitKeywordLocation, splitValues);
         System.out.println("The master is: "+master.getClass().getName());
         master.init();
         //启动master
